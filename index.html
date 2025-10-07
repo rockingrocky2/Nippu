@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nippu: Your Personal Pathfinder</title>
+    <!-- Chosen Palette: Warm Neutrals (Slate, Stone, Amber/Orange Accent) -->
+    <!-- Application Structure Plan: A single-page dashboard layout. The top section is the motivational "Why" Dashboard (family, mission, loan tracker) to ground the user in their purpose. Below this, three clear, interactive cards represent the "Paths," acting as the main navigation. Selecting a path dynamically updates the main content area with a "Micro-Quest" checklist, breaking down the chosen goal into daily, manageable steps. This structure is chosen to combat overwhelm by prioritizing motivation and providing a clear, step-by-step action plan. -->
+    <!-- Visualization & Content Choices: 1. Freedom Metric (Loan): Goal: Inform/Change. Viz: Chart.js Donut Chart. Interaction: User can input their current loan balance to update the chart, providing visual feedback on progress. Justification: A dynamic chart is more engaging and motivating for financial tracking than static numbers. 2. Three Paths: Goal: Organize/Navigate. Presentation: Interactive HTML/CSS cards. Interaction: Clicking a card filters the displayed quests. Justification: Clear, visual navigation reduces cognitive load. 3. Micro-Quests: Goal: Guide Action. Presentation: Interactive HTML/CSS checklist. Interaction: Users can check off tasks. Justification: A checklist provides a clear sense of accomplishment and momentum. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9; /* slate-100 */
+        }
+        .path-card.active {
+            border-color: #f59e0b; /* amber-500 */
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
+        }
+        .quest-item.completed {
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 300px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 300px;
+        }
+        .progress-bar-container {
+            width: 100%;
+            background-color: #e2e8f0; /* slate-200 */
+            border-radius: 9999px;
+            height: 1.5rem;
+            overflow: hidden;
+        }
+        .progress-bar {
+            background-color: #16a34a; /* green-600 */
+            height: 100%;
+            width: 0%;
+            border-radius: 9999px;
+            transition: width 0.5s ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+        
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-slate-900">Nippu <span class="text-amber-500">(నిప్పు)</span></h1>
+            <p class="text-lg text-slate-600 mt-2">Reignite your fire. Build your future.</p>
+        </header>
+
+        <main id="app">
+
+            <!-- Section 1: The "Why" Dashboard -->
+            <section id="why-dashboard" class="mb-10 p-6 bg-white rounded-2xl shadow-lg">
+                <h2 class="text-2xl font-bold text-center mb-6">Your "Why" Dashboard</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center items-center">
+                    
+                    <div class="flex flex-col items-center">
+                        <h3 class="text-xl font-semibold mb-4">Family Focus</h3>
+                        <div class="flex space-x-2">
+                            <img src="https://placehold.co/80x80/e2e8f0/334155?text=Wife" alt="Family member" class="rounded-full shadow-md border-2 border-white">
+                            <img src="https://placehold.co/80x80/e2e8f0/334155?text=Daughter" alt="Family member" class="rounded-full shadow-md border-2 border-white">
+                            <img src="https://placehold.co/80x80/e2e8f0/334155?text=Son" alt="Family member" class="rounded-full shadow-md border-2 border-white">
+                        </div>
+                        <p class="text-sm text-slate-500 mt-3">Your true north.</p>
+                         <div class="mt-4 w-full max-w-xs">
+                            <label for="userName" class="text-sm font-medium text-slate-600">Your Name:</label>
+                            <input type="text" id="userName" placeholder="Enter your name" class="w-full mt-1 p-2 border border-slate-300 rounded-md focus:ring-amber-500 focus:border-amber-500">
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col items-center justify-center p-4 bg-slate-50 rounded-xl h-full">
+                        <h3 class="text-xl font-semibold mb-2">Your Mission</h3>
+                        <p class="text-slate-700 italic">"I am building a secure, joyful, and purposeful future for my family, one step at a time."</p>
+                    </div>
+
+                    <div class="flex flex-col items-center">
+                        <h3 class="text-xl font-semibold mb-2">The Freedom Metric</h3>
+                        <div class="chart-container">
+                            <canvas id="freedomChart"></canvas>
+                        </div>
+                         <div class="mt-4 flex flex-col items-center w-full max-w-xs">
+                            <label for="loanAmount" class="text-sm font-medium text-slate-600">Current Loan Amount (₹):</label>
+                            <div class="flex items-center mt-1">
+                                <input type="number" id="loanAmount" value="8500000" class="w-full p-2 border border-slate-300 rounded-l-md focus:ring-amber-500 focus:border-amber-500">
+                                <button id="updateLoanBtn" class="bg-amber-500 text-white p-2 rounded-r-md hover:bg-amber-600 transition-colors">Update</button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- Section 2: The Three Paths -->
+            <section id="paths" class="mb-10">
+                <h2 class="text-2xl font-bold text-center mb-6">Choose Your Active Path</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div id="path-builder" class="path-card active border-4 border-transparent p-6 bg-white rounded-2xl shadow-lg cursor-pointer transition-all hover:shadow-xl hover:-translate-y-1">
+                        <h3 class="text-xl font-bold text-slate-900">1. The Bridge Builder</h3>
+                        <p class="text-slate-600 mt-2">Vizag Cloud Services for SMEs.</p>
+                    </div>
+                    <div id="path-teacher" class="path-card border-4 border-transparent p-6 bg-white rounded-2xl shadow-lg cursor-pointer transition-all hover:shadow-xl hover:-translate-y-1">
+                        <h3 class="text-xl font-bold text-slate-900">2. The Teacher</h3>
+                        <p class="text-slate-600 mt-2">The Future Skills Academy.</p>
+                    </div>
+                    <div id="path-innovator" class="path-card border-4 border-transparent p-6 bg-white rounded-2xl shadow-lg cursor-pointer transition-all hover:shadow-xl hover:-translate-y-1">
+                        <h3 class="text-xl font-bold text-slate-900">3. The Innovator</h3>
+                        <p class="text-slate-600 mt-2">AI for Wellness.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Path Details Section -->
+            <section id="path-details" class="mb-10 p-6 bg-white rounded-2xl shadow-lg"></section>
+            
+            <!-- Micro-Quests Section -->
+            <section id="micro-quests" class="mb-10 p-6 bg-white rounded-2xl shadow-lg">
+                <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-4">
+                    <h2 id="quest-title" class="text-2xl font-bold"></h2>
+                    <div id="progress-container" class="w-full sm:w-1/3 mt-4 sm:mt-0">
+                         <div class="progress-bar-container">
+                            <div id="progressBar" class="progress-bar">0%</div>
+                        </div>
+                    </div>
+                </div>
+                <div id="quest-list" class="space-y-4"></div>
+            </section>
+
+            <!-- Hosting Info Section -->
+            <section id="next-steps" class="mb-10 p-6 bg-white rounded-2xl shadow-lg">
+                <h2 class="text-2xl font-bold mb-4">Next Steps: How to Host This App for Free</h2>
+                <p class="text-slate-600 mb-6">This application is a single HTML file, which makes it very easy to put online for free. Here are a few excellent options:</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <h3 class="font-bold text-lg">1. GitHub Pages</h3>
+                        <p class="text-sm text-slate-600 mt-2">Ideal if you are familiar with Git. It's a reliable and popular choice.</p>
+                        <ol class="list-decimal list-inside text-sm mt-2 space-y-1">
+                            <li>Create a new public repository on GitHub.</li>
+                            <li>Upload this file, but rename it to `index.html`.</li>
+                            <li>In the repository settings, go to the "Pages" section.</li>
+                            <li>Select the `main` branch as the source and click "Save". Your site will be live in a few minutes.</li>
+                        </ol>
+                    </div>
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <h3 class="font-bold text-lg">2. Netlify</h3>
+                        <p class="text-sm text-slate-600 mt-2">Incredibly simple, with a drag-and-drop interface.</p>
+                         <ol class="list-decimal list-inside text-sm mt-2 space-y-1">
+                            <li>Sign up for a free account at Netlify.com.</li>
+                            <li>Save this file as `index.html` on your computer.</li>
+                            <li>On your Netlify dashboard, simply drag the `index.html` file into the deployment area.</li>
+                            <li>Your site will be live instantly on a random URL, which you can customize.</li>
+                        </ol>
+                    </div>
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <h3 class="font-bold text-lg">3. Vercel</h3>
+                        <p class="text-sm text-slate-600 mt-2">Another excellent, easy-to-use platform popular with developers.</p>
+                         <ol class="list-decimal list-inside text-sm mt-2 space-y-1">
+                            <li>Sign up for a free "Hobby" account at Vercel.com.</li>
+                            <li>Connect your GitHub account and import the repository containing your `index.html` file.</li>
+                            <li>Vercel will automatically detect it's a static site and deploy it for you.</li>
+                            <li>Every change you push to GitHub will be deployed automatically.</li>
+                        </ol>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Guide's Corner Section -->
+            <section id="guide" class="p-6 bg-slate-800 text-white rounded-2xl shadow-lg">
+                 <h2 class="text-2xl font-bold mb-4 text-center text-amber-400">The Guide's Corner</h2>
+                <ul class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-center">
+                    <li class="p-4 bg-slate-700 rounded-xl"><h4 class="font-semibold mb-1">On Your Job</h4><p class="text-sm text-slate-300">"The AI is your assistant, not your boss. Use it to learn concepts, not just for answers."</p></li>
+                    <li class="p-4 bg-slate-700 rounded-xl"><h4 class="font-semibold mb-1">On Your Goal</h4><p class="text-sm text-slate-300">"The goal for this year is not to become a billionaire. It's to replace your salary with work you do not hate."</p></li>
+                    <li class="p-4 bg-slate-700 rounded-xl"><h4 class="font-semibold mb-1">On Your Value</h4><p class="text-sm text-slate-300">"You are the pillar of your family. Your worth is not defined by your job title or your bank balance."</p></li>
+                    <li class="p-4 bg-slate-700 rounded-xl"><h4 class="font-semibold mb-1">On Failure</h4><p class="text-sm text-slate-300">"Every 'wrong' answer is a lesson that moves you closer to the right one. Do not fear mistakes; learn from them."</p></li>
+                </ul>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const pathData = {
+                builder: {
+                    title: 'Your Micro-Quests: The Bridge Builder Path',
+                    details: {
+                        pain: { title: 'The Pain You Solve', content: 'Small and medium businesses in Visakhapatnam are overwhelmed by technology. They need a trusted local expert to guide them, not a faceless corporation.' },
+                        what: { title: 'What You Do', content: 'You become their "Technology Growth Partner." You start with a simple "Business Health Check" and offer monthly packages for website management, security, and e-commerce setup.' },
+                        why: { title: 'Why This Works For You', content: 'It leverages your existing skills in a new way, builds confidence by solving real problems for grateful clients, and has a very low initial cost.' }
+                    },
+                    quests: [
+                        { day: 1, title: 'Identify Your World', task: 'Walk around your neighborhood. Write down every type of small business you see.' },
+                        { day: 2, title: 'Listen for Pain', task: 'Pick one business. Search online for common problems they face.' },
+                        { day: 3, title: 'Form a Hypothesis', task: 'Write one sentence on how tech could solve one of their problems.' },
+                        { day: 4, title: 'Understand Your Tools', task: 'Watch a beginner\'s video on "cloud hosting" to refresh your perspective.' },
+                        { day: 5, title: 'Create Your "One-Pager"', task: 'Draft a simple, one-sentence service proposal for a hypothetical client.' },
+                        { day: 6, title: 'Find Your Peers', task: 'Look for "IT consultants for SMEs" on LinkedIn for market research.' },
+                        { day: 7, title: 'Rest and Reflect', task: 'Review your week\'s progress. Acknowledge your effort.' }
+                    ]
+                },
+                teacher: {
+                    title: 'Your Micro-Quests: The Teacher Path',
+                    details: {
+                        pain: { title: 'The Pain You Solve', content: 'Parents are deeply concerned about preparing their children for an AI-driven future, but the current education system is lagging behind.' },
+                        what: { title: 'What You Do', content: 'You create a "Future Skills Academy." Instead of tuition, you offer project-based weekend workshops on critical thinking, creativity, and ethical AI use.' },
+                        why: { title: 'Why This Works For You', content: 'This path is deeply purposeful and directly addresses your own concerns. It fulfills a massive, growing need in the Indian education market and can be started small.' }
+                    },
+                    quests: [
+                        { day: 1, title: 'Define Your Expertise', task: 'List three tech skills you can simplify and teach to young students.' },
+                        { day: 2, title: 'Research Your Audience', task: 'Read parent forums to understand their top educational concerns.' },
+                        { day: 3, title: 'Design a Mini-Lesson', task: 'Outline a fun, 15-minute interactive activity for one of your topics.' },
+                        { day: 4, title: 'More Quests Coming Soon...', task: 'Continue exploring ideas for your academy. Each step forward is a victory.' }
+                    ]
+                },
+                innovator: {
+                    title: 'Your Micro-Quests: The Innovator Path',
+                    details: {
+                        pain: { title: 'The Pain You Solve', content: 'The immense mental and emotional pressure of modern life, especially in the tech industry, often lacks accessible and culturally relevant support systems.' },
+                        what: { title: 'What You Do', content: 'You create a niche "AI for Wellness" platform. This could be a corporate wellness tool to combat burnout, or a mindfulness app in regional languages like Telugu.' },
+                        why: { title: 'Why This Works For You', content: 'You turn your own painful experience into a powerful, purposeful solution. It has the potential for huge positive impact and connects your tech background with deep empathy.' }
+                    },
+                    quests: [
+                        { day: 1, title: 'Map Your Own Experience', task: 'List the top three professional stressors you face.' },
+                        { day: 2, title: 'Brainstorm Tech Solutions', task: 'For each stressor, imagine one way an app could help.' },
+                        { day: 3, title: 'Research Existing Tools', task: 'Analyze wellness apps in India. What are they missing?' },
+                        { day: 4, title: 'More Quests Coming Soon...', task: 'Your personal insights are the foundation of a powerful solution. Keep exploring.' }
+                    ]
+                }
+            };
+
+            let currentPath = 'builder';
+            let freedomChart;
+            const totalLoan = 8500000;
+
+            const questListEl = document.getElementById('quest-list');
+            const questTitleEl = document.getElementById('quest-title');
+            const pathDetailsEl = document.getElementById('path-details');
+            const pathCards = document.querySelectorAll('.path-card');
+            const loanAmountInput = document.getElementById('loanAmount');
+            const updateLoanBtn = document.getElementById('updateLoanBtn');
+            const progressBar = document.getElementById('progressBar');
+            const userNameInput = document.getElementById('userName');
+
+            function renderPathDetails() {
+                const details = pathData[currentPath].details;
+                pathDetailsEl.innerHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                        <div class="p-4 bg-slate-50 rounded-xl">
+                            <h3 class="font-bold text-lg text-amber-600">${details.pain.title}</h3>
+                            <p class="text-slate-600 mt-2 text-sm">${details.pain.content}</p>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-xl">
+                            <h3 class="font-bold text-lg text-amber-600">${details.what.title}</h3>
+                            <p class="text-slate-600 mt-2 text-sm">${details.what.content}</p>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-xl">
+                            <h3 class="font-bold text-lg text-amber-600">${details.why.title}</h3>
+                            <p class="text-slate-600 mt-2 text-sm">${details.why.content}</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function updateProgressBar() {
+                const quests = pathData[currentPath].quests;
+                const checkedQuests = questListEl.querySelectorAll('input[type="checkbox"]:checked').length;
+                const progress = quests.length > 0 ? Math.round((checkedQuests / quests.length) * 100) : 0;
+                progressBar.style.width = `${progress}%`;
+                progressBar.textContent = `${progress}%`;
+            }
+
+            function renderQuests() {
+                const pathInfo = pathData[currentPath];
+                questTitleEl.textContent = pathInfo.title;
+                questListEl.innerHTML = '';
+                pathInfo.quests.forEach(quest => {
+                    const questItem = document.createElement('div');
+                    questItem.className = 'quest-item p-4 border border-slate-200 rounded-lg flex items-start space-x-4';
+                    questItem.innerHTML = `
+                        <input type="checkbox" class="mt-1 h-5 w-5 text-amber-500 border-slate-300 rounded focus:ring-amber-500 flex-shrink-0">
+                        <div>
+                            <p class="font-bold">Day ${quest.day}: ${quest.title}</p>
+                            <p class="text-slate-600 text-sm">${quest.task}</p>
+                        </div>
+                    `;
+                    questListEl.appendChild(questItem);
+                });
+                updateProgressBar();
+            }
+
+            function initChart() {
+                const ctx = document.getElementById('freedomChart').getContext('2d');
+                const currentLoan = parseFloat(loanAmountInput.value);
+                const paidAmount = totalLoan - currentLoan;
+                
+                const data = {
+                    labels: ['Amount Paid', 'Remaining Loan'],
+                    datasets: [{
+                        data: [paidAmount > 0 ? paidAmount : 0, currentLoan > 0 ? currentLoan : 0],
+                        backgroundColor: ['#16a34a', '#f59e0b'],
+                        borderColor: '#f1f5f9', borderWidth: 4, hoverOffset: 4
+                    }]
+                };
+                const options = {
+                    responsive: true, maintainAspectRatio: false, cutout: '70%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.label}: ${new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(context.parsed)}`;
+                                }
+                            }
+                        }
+                    }
+                };
+                if(freedomChart) { freedomChart.destroy(); }
+                freedomChart = new Chart(ctx, { type: 'doughnut', data: data, options: options });
+            }
+            
+            userNameInput.addEventListener('input', (e) => {
+                localStorage.setItem('userName', e.target.value);
+            });
+
+            pathCards.forEach(card => {
+                card.addEventListener('click', () => {
+                    pathCards.forEach(c => c.classList.remove('active'));
+                    card.classList.add('active');
+                    currentPath = card.id.split('-')[1];
+                    renderPathDetails();
+                    renderQuests();
+                });
+            });
+            
+            questListEl.addEventListener('click', (e) => {
+                if (e.target.type === 'checkbox') {
+                    e.target.closest('.quest-item').classList.toggle('completed', e.target.checked);
+                    updateProgressBar();
+                }
+            });
+
+            updateLoanBtn.addEventListener('click', initChart);
+            
+            const savedName = localStorage.getItem('userName');
+            if (savedName) {
+                userNameInput.value = savedName;
+            }
+
+            initChart();
+            renderPathDetails();
+            renderQuests();
+        });
+    </script>
+</body>
+</html>
+
